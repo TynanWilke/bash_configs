@@ -1,67 +1,35 @@
-# Tynan's Custom Bash Configuration
-# This file is sourced from ~/.bashrc
-
-# History settings
+# Bash history
+shopt -s histappend
+shopt -s histreedit
+shopt -s histverify
+export PROMPT_COMMAND='history -a'
+export HISTCONTROL=ignoredups:erasedups
 export HISTSIZE=10000
 export HISTFILESIZE=20000
-export HISTCONTROL=ignoreboth:erasedups
-shopt -s histappend
+export HISTTIMEFORMAT="%F %T "
 
-# Prompt customization
-export PS1='\[\e[0;32m\]\u@\h\[\e[0m\]:\[\e[0;34m\]\w\[\e[0m\]\$ '
-
-# Aliases
-alias ll='ls -lah'
-alias la='ls -A'
-alias l='ls -CF'
-alias ..='cd ..'
-alias ...='cd ../..'
-alias grep='grep --color=auto'
-alias tmux='tmux -2'
-
-# Git aliases
-alias gs='git status'
-alias ga='git add'
-alias gc='git commit'
-alias gp='git push'
-alias gl='git log --oneline --graph --decorate'
-alias gd='git diff'
-
-# Safety nets
-alias rm='rm -i'
-alias cp='cp -i'
-alias mv='mv -i'
-
-# Editor
-export EDITOR='nvim'
-export VISUAL='nvim'
-
-# PATH additions (customize as needed)
-# export PATH="$HOME/bin:$PATH"
-
-# Custom functions
-mkcd() {
-    mkdir -p "$1" && cd "$1"
+parse_git_branch() {
+  git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/ (\1)/'
 }
+PS1='\e[?2004l[\[\033[35m\]\t\[\033[m\]-\[\033[36m\]\u\[\033[m\]@\[\033[32m\]\h:\[\033[33;1m\]\w\[\033[m\]]$(parse_git_branch)\n$ '
+unset color_prompt force_color_prompt
 
-# Extract various archive types
-extract() {
-    if [ -f "$1" ]; then
-        case "$1" in
-            *.tar.bz2)   tar xjf "$1"     ;;
-            *.tar.gz)    tar xzf "$1"     ;;
-            *.bz2)       bunzip2 "$1"     ;;
-            *.rar)       unrar x "$1"     ;;
-            *.gz)        gunzip "$1"      ;;
-            *.tar)       tar xf "$1"      ;;
-            *.tbz2)      tar xjf "$1"     ;;
-            *.tgz)       tar xzf "$1"     ;;
-            *.zip)       unzip "$1"       ;;
-            *.Z)         uncompress "$1"  ;;
-            *.7z)        7z x "$1"        ;;
-            *)           echo "'$1' cannot be extracted via extract()" ;;
-        esac
-    else
-        echo "'$1' is not a valid file"
-    fi
+# Dont shutdown terminal on ctrl-d
+export IGNOREEOF=3
+
+# Allow bin dir in home
+export PATH=~/bin:$PATH
+
+cd_git_root() {
+  # Check if the current directory is part of a Git repository
+  if git rev-parse --show-toplevel > /dev/null 2>&1; then
+    # Get the top-level directory of the Git repository
+    top_level_dir=$(git rev-parse --show-toplevel)
+    # Change directory to the top-level directory
+    cd "$top_level_dir" || return 1
+    echo "Changed directory to the top-level of the Git repository: $top_level_dir"
+  else
+    echo "Not inside a Git repository."
+    return 1
+  fi
 }
