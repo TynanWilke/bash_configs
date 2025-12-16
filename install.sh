@@ -137,24 +137,24 @@ install_neovim_from_release() {
 
     # Determine architecture and OS
     if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-        download_url="https://github.com/neovim/neovim/releases/download/${nvim_version}/nvim-linux64.tar.gz"
+        download_url="https://github.com/neovim/neovim/releases/download/${nvim_version}/nvim-linux-x86_64.tar.gz"
 
         log_info "Downloading neovim from: $download_url"
-        curl -L "$download_url" -o "$temp_dir/nvim.tar.gz" || {
+        curl -L "$download_url" -o "$temp_dir/nvim-linux-x86_64.tar.gz" || {
             log_error "Failed to download neovim"
             rm -rf "$temp_dir"
             return 1
         }
 
         log_info "Extracting neovim..."
-        tar -xzf "$temp_dir/nvim.tar.gz" -C "$temp_dir" || {
+        tar xzvf "$temp_dir/nvim-linux-x86_64.tar.gz" -C "$temp_dir" || {
             log_error "Failed to extract neovim"
             rm -rf "$temp_dir"
             return 1
         }
 
         # Copy binary to $HOME/bin
-        cp "$temp_dir/nvim-linux64/bin/nvim" "$HOME/bin/nvim" || {
+        cp "$temp_dir/nvim-linux-x86_64/bin/nvim" "$HOME/bin/nvim" || {
             log_error "Failed to copy neovim binary"
             rm -rf "$temp_dir"
             return 1
@@ -166,7 +166,7 @@ install_neovim_from_release() {
         # Copy runtime files
         log_info "Installing neovim runtime files..."
         mkdir -p "$HOME/.local/share/nvim"
-        cp -r "$temp_dir/nvim-linux64/share/nvim/runtime" "$HOME/.local/share/nvim/" 2>/dev/null || true
+        cp -r "$temp_dir/nvim-linux-x86_64/share/nvim/runtime" "$HOME/.local/share/nvim/" 2>/dev/null || true
 
         log_info "Neovim v0.11.5 installed successfully to \$HOME/bin/nvim"
 
