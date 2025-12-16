@@ -61,10 +61,13 @@ Supported systems:
 ### Configuration Files
 
 - `~/.bashrc.tynan` - Custom bash configuration (sourced from `~/.bashrc`)
+- `~/.bashrc.env` - Environment variables for API keys and secrets (sourced from `~/.bashrc`)
 - `~/.tmux.conf` - Tmux configuration
 - `~/.config/nvim/init.lua` - Neovim configuration
 
 Existing configuration files are automatically backed up to `~/.config-backup-TIMESTAMP/` before installation.
+
+**Important**: The `~/.bashrc.env` file is created with a template for storing API keys and environment variables. It has restricted permissions (600) and should never be committed to version control.
 
 ## Bash Configuration Highlights
 
@@ -128,12 +131,35 @@ nvim ~/.tmux.conf
 
 # Edit neovim config
 nvim ~/.config/nvim/init.lua
+
+# Add API keys and environment variables
+nvim ~/.bashrc.env
 ```
 
 After editing:
 - Bash: `source ~/.bashrc`
 - Tmux: `Ctrl-a r` (or `tmux source ~/.tmux.conf`)
 - Neovim: Restart nvim
+
+## Managing API Keys and Secrets
+
+The installation creates `~/.bashrc.env` for storing API keys and sensitive environment variables:
+
+```bash
+# Edit the file to add your keys
+nvim ~/.bashrc.env
+
+# Example content:
+export ANTHROPIC_API_KEY="sk-ant-..."
+export OPENAI_API_KEY="sk-..."
+export GITHUB_TOKEN="ghp_..."
+```
+
+**Security notes:**
+- File permissions are automatically set to `600` (owner read/write only)
+- This file is sourced before `.bashrc.tynan` in your shell
+- Never commit this file to version control
+- Add `*.env` to your `.gitignore` if storing configs in a repo
 
 ## Security
 

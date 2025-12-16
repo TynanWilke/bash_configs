@@ -282,10 +282,39 @@ install_configs() {
         }
     fi
 
+    # Create .bashrc.env template if it doesn't exist
+    if [ ! -f "$HOME/.bashrc.env" ]; then
+        log_info "Creating .bashrc.env template for API keys and secrets..."
+        cat > "$HOME/.bashrc.env" << 'EOF'
+# Environment variables for API keys and secrets
+# This file is sourced by ~/.bashrc and should NOT be committed to version control
+# Add this file to your .gitignore if storing in a repository
+
+# Example API keys (uncomment and add your keys):
+# export ANTHROPIC_API_KEY="your-api-key-here"
+# export OPENAI_API_KEY="your-api-key-here"
+# export GITHUB_TOKEN="your-github-token-here"
+
+# Other environment variables:
+# export DATABASE_URL="your-database-url"
+# export AWS_ACCESS_KEY_ID="your-aws-key"
+# export AWS_SECRET_ACCESS_KEY="your-aws-secret"
+EOF
+        chmod 600 "$HOME/.bashrc.env"  # Restrict permissions to owner only
+        log_info "Created ~/.bashrc.env (use this for API keys and secrets)"
+    else
+        log_info "~/.bashrc.env already exists, skipping creation"
+    fi
+
     # Add sourcing to .bashrc if not already present
     if [ -f "$HOME/.bashrc" ]; then
         if ! grep -q ".bashrc.tynan" "$HOME/.bashrc"; then
-            log_info "Adding .bashrc.tynan sourcing to .bashrc..."
+            log_info "Adding configuration sourcing to .bashrc..."
+            echo "" >> "$HOME/.bashrc"
+            echo "# Source environment variables (API keys, secrets, etc.)" >> "$HOME/.bashrc"
+            echo "if [ -f ~/.bashrc.env ]; then" >> "$HOME/.bashrc"
+            echo "    . ~/.bashrc.env" >> "$HOME/.bashrc"
+            echo "fi" >> "$HOME/.bashrc"
             echo "" >> "$HOME/.bashrc"
             echo "# Source Tynan's custom bash configuration" >> "$HOME/.bashrc"
             echo "if [ -f ~/.bashrc.tynan ]; then" >> "$HOME/.bashrc"
@@ -293,10 +322,33 @@ install_configs() {
             echo "fi" >> "$HOME/.bashrc"
         else
             log_info ".bashrc already sources .bashrc.tynan"
+            # Check if .bashrc.env is sourced
+            if ! grep -q ".bashrc.env" "$HOME/.bashrc"; then
+                log_info "Adding .bashrc.env sourcing to .bashrc..."
+                # Find the line number where .bashrc.tynan is sourced and insert before it
+                sed -i.bak '/# Source Tynan'\''s custom bash configuration/i\
+# Source environment variables (API keys, secrets, etc.)\
+if [ -f ~/.bashrc.env ]; then\
+    . ~/.bashrc.env\
+fi\
+' "$HOME/.bashrc" 2>/dev/null || {
+                    # If sed -i doesn't work (macOS), use a different approach
+                    echo "" >> "$HOME/.bashrc"
+                    echo "# Source environment variables (API keys, secrets, etc.)" >> "$HOME/.bashrc"
+                    echo "if [ -f ~/.bashrc.env ]; then" >> "$HOME/.bashrc"
+                    echo "    . ~/.bashrc.env" >> "$HOME/.bashrc"
+                    echo "fi" >> "$HOME/.bashrc"
+                }
+            fi
         fi
     else
         log_warn ".bashrc not found, creating one..."
         echo "# Bash configuration" > "$HOME/.bashrc"
+        echo "" >> "$HOME/.bashrc"
+        echo "# Source environment variables (API keys, secrets, etc.)" >> "$HOME/.bashrc"
+        echo "if [ -f ~/.bashrc.env ]; then" >> "$HOME/.bashrc"
+        echo "    . ~/.bashrc.env" >> "$HOME/.bashrc"
+        echo "fi" >> "$HOME/.bashrc"
         echo "" >> "$HOME/.bashrc"
         echo "# Source Tynan's custom bash configuration" >> "$HOME/.bashrc"
         echo "if [ -f ~/.bashrc.tynan ]; then" >> "$HOME/.bashrc"
@@ -358,6 +410,7 @@ main() {
     log_info "Please restart your terminal or run: source ~/.bashrc"
     log_info ""
     log_info "Next steps:"
+    log_info "  - Add API keys to ~/.bashrc.env (already created with examples)"
     log_info "  - For tmux: Run 'tmux' to start a session"
     log_info "  - For neovim: Run 'nvim' to start editing"
 }
