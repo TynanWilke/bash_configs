@@ -94,6 +94,152 @@ check_dependencies() {
     fi
 }
 
+# Check neovim version and upgrade if needed
+check_and_upgrade_neovim() {
+    if ! command -v nvim &> /dev/null; then
+        log_warn "Neovim not found. Please install it first."
+        return 1
+    fi
+
+    # Get neovim version (portable across Linux and macOS)
+    local nvim_version=$(nvim --version 2>/dev/null | head -n1 | sed -n 's/.*v\([0-9]\+\.[0-9]\+\).*/\1/p')
+    if [ -z "$nvim_version" ]; then
+        nvim_version="0.0"
+    fi
+    local major=$(echo "$nvim_version" | cut -d. -f1)
+    local minor=$(echo "$nvim_version" | cut -d. -f2)
+
+    log_info "Detected neovim version: $nvim_version"
+
+    # Check if version is below 0.10
+    if [ "$major" -eq 0 ] && [ "$minor" -lt 10 ]; then
+        log_warn "Neovim version $nvim_version is below 0.10"
+
+        read -p "Install newer neovim (v0.11.5) to \$HOME/bin? (y/n) " -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            log_warn "Skipping neovim upgrade. Some features may not work."
+            return 0
+        fi
+
+        install_neovim_from_release
+    else
+        log_info "Neovim version is sufficient (>= 0.10)"
+    fi
+}
+
+# Install neovim from GitHub release
+install_neovim_from_release() {
+    log_info "Installing neovim v0.11.5 from GitHub release..."
+
+    # Create $HOME/bin directory
+    mkdir -p "$HOME/bin"
+
+    local nvim_version="v0.11.5"
+    local download_url=""
+    local temp_dir="/tmp/nvim-install-$$"
+
+    mkdir -p "$temp_dir"
+
+    # Determine architecture and OS
+    if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+        download_url="https://github.com/neovim/neovim/releases/download/${nvim_version}/nvim-linux64.tar.gz"
+
+        log_info "Downloading neovim from: $download_url"
+        curl -L "$download_url" -o "$temp_dir/nvim.tar.gz" || {
+            log_error "Failed to download neovim"
+            rm -rf "$temp_dir"
+            return 1
+        }
+
+        log_info "Extracting neovim..."
+        tar -xzf "$temp_dir/nvim.tar.gz" -C "$temp_dir" || {
+            log_error "Failed to extract neovim"
+            rm -rf "$temp_dir"
+            return 1
+        }
+
+        # Copy binary to $HOME/bin
+        cp "$temp_dir/nvim-linux64/bin/nvim" "$HOME/bin/nvim" || {
+            log_error "Failed to copy neovim binary"
+            rm -rf "$temp_dir"
+            return 1
+        }
+
+        # Make it executable
+        chmod +x "$HOME/bin/nvim"
+
+        # Copy runtime files
+        log_info "Installing neovim runtime files..."
+        mkdir -p "$HOME/.local/share/nvim"
+        cp -r "$temp_dir/nvim-linux64/share/nvim/runtime" "$HOME/.local/share/nvim/" 2>/dev/null || true
+
+        log_info "Neovim v0.11.5 installed successfully to \$HOME/bin/nvim"
+
+    elif [[ "$OSTYPE" == "darwin"* ]]; then
+        download_url="https://github.com/neovim/neovim/releases/download/${nvim_version}/nvim-macos-arm64.tar.gz"
+
+        # Check if running on Intel Mac
+        if [[ $(uname -m) == "x86_64" ]]; then
+            download_url="https://github.com/neovim/neovim/releases/download/${nvim_version}/nvim-macos-x86_64.tar.gz"
+        fi
+
+        log_info "Downloading neovim from: $download_url"
+        curl -L "$download_url" -o "$temp_dir/nvim.tar.gz" || {
+            log_error "Failed to download neovim"
+            rm -rf "$temp_dir"
+            return 1
+        }
+
+        log_info "Extracting neovim..."
+        tar -xzf "$temp_dir/nvim.tar.gz" -C "$temp_dir" || {
+            log_error "Failed to extract neovim"
+            rm -rf "$temp_dir"
+            return 1
+        }
+
+        # Copy binary to $HOME/bin
+        cp "$temp_dir/nvim-macos-"*/bin/nvim "$HOME/bin/nvim" || {
+            log_error "Failed to copy neovim binary"
+            rm -rf "$temp_dir"
+            return 1
+        }
+
+        # Make it executable
+        chmod +x "$HOME/bin/nvim"
+
+        # Copy runtime files
+        log_info "Installing neovim runtime files..."
+        mkdir -p "$HOME/.local/share/nvim"
+        cp -r "$temp_dir/nvim-macos-"*/share/nvim/runtime "$HOME/.local/share/nvim/" 2>/dev/null || true
+
+        log_info "Neovim v0.11.5 installed successfully to \$HOME/bin/nvim"
+    else
+        log_error "Unsupported OS for automatic neovim installation"
+        rm -rf "$temp_dir"
+        return 1
+    fi
+
+    # Clean up
+    rm -rf "$temp_dir"
+
+    # Update PATH for current session
+    export PATH="$HOME/bin:$PATH"
+
+    # Verify installation
+    if "$HOME/bin/nvim" --version &> /dev/null; then
+        local new_version=$("$HOME/bin/nvim" --version 2>/dev/null | head -n1 | sed -n 's/.*v\([0-9]\+\.[0-9]\+\.[0-9]\+\).*/\1/p')
+        if [ -z "$new_version" ]; then
+            new_version="unknown"
+        fi
+        log_info "Verification: nvim version $new_version installed successfully"
+        log_info "Make sure \$HOME/bin is in your PATH (already configured in .bashrc.tynan)"
+    else
+        log_error "Neovim installation verification failed"
+        return 1
+    fi
+}
+
 # Install configuration files
 install_configs() {
     log_info "Installing configuration files..."
@@ -205,6 +351,10 @@ main() {
         fi
         echo ""
     fi
+
+    # Check and upgrade neovim if needed
+    check_and_upgrade_neovim
+    echo ""
 
     install_configs
     echo ""
