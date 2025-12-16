@@ -153,20 +153,21 @@ install_neovim_from_release() {
             return 1
         }
 
-        # Copy binary to $HOME/bin
-        cp "$temp_dir/nvim-linux-x86_64/bin/nvim" "$HOME/bin/nvim" || {
-            log_error "Failed to copy neovim binary"
+        # Install entire neovim directory to $HOME/.local/
+        log_info "Installing neovim to \$HOME/.local/nvim-linux-x86_64..."
+        rm -rf "$HOME/.local/nvim-linux-x86_64"
+        cp -r "$temp_dir/nvim-linux-x86_64" "$HOME/.local/" || {
+            log_error "Failed to copy neovim directory"
             rm -rf "$temp_dir"
             return 1
         }
 
-        # Make it executable
-        chmod +x "$HOME/bin/nvim"
-
-        # Copy runtime files
-        log_info "Installing neovim runtime files..."
-        mkdir -p "$HOME/.local/share/nvim"
-        cp -r "$temp_dir/nvim-linux-x86_64/share/nvim/runtime" "$HOME/.local/share/nvim/" 2>/dev/null || true
+        # Create symlink in $HOME/bin to the neovim binary
+        ln -sf "$HOME/.local/nvim-linux-x86_64/bin/nvim" "$HOME/bin/nvim" || {
+            log_error "Failed to create nvim symlink"
+            rm -rf "$temp_dir"
+            return 1
+        }
 
         log_info "Neovim v0.11.5 installed successfully to \$HOME/bin/nvim"
 
@@ -192,20 +193,25 @@ install_neovim_from_release() {
             return 1
         }
 
-        # Copy binary to $HOME/bin
-        cp "$temp_dir/nvim-macos-"*/bin/nvim "$HOME/bin/nvim" || {
-            log_error "Failed to copy neovim binary"
+        # Determine the extracted directory name
+        local nvim_dir=$(ls -d "$temp_dir/nvim-macos-"* | head -n1)
+        local nvim_dirname=$(basename "$nvim_dir")
+
+        # Install entire neovim directory to $HOME/.local/
+        log_info "Installing neovim to \$HOME/.local/$nvim_dirname..."
+        rm -rf "$HOME/.local/$nvim_dirname"
+        cp -r "$nvim_dir" "$HOME/.local/" || {
+            log_error "Failed to copy neovim directory"
             rm -rf "$temp_dir"
             return 1
         }
 
-        # Make it executable
-        chmod +x "$HOME/bin/nvim"
-
-        # Copy runtime files
-        log_info "Installing neovim runtime files..."
-        mkdir -p "$HOME/.local/share/nvim"
-        cp -r "$temp_dir/nvim-macos-"*/share/nvim/runtime "$HOME/.local/share/nvim/" 2>/dev/null || true
+        # Create symlink in $HOME/bin to the neovim binary
+        ln -sf "$HOME/.local/$nvim_dirname/bin/nvim" "$HOME/bin/nvim" || {
+            log_error "Failed to create nvim symlink"
+            rm -rf "$temp_dir"
+            return 1
+        }
 
         log_info "Neovim v0.11.5 installed successfully to \$HOME/bin/nvim"
     else
