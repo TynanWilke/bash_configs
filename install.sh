@@ -289,16 +289,7 @@ install_configs() {
 # Environment variables for API keys and secrets
 # This file is sourced by ~/.bashrc and should NOT be committed to version control
 # Add this file to your .gitignore if storing in a repository
-
-# Example API keys (uncomment and add your keys):
-# export ANTHROPIC_API_KEY="your-api-key-here"
-# export OPENAI_API_KEY="your-api-key-here"
-# export GITHUB_TOKEN="your-github-token-here"
-
-# Other environment variables:
-# export DATABASE_URL="your-database-url"
-# export AWS_ACCESS_KEY_ID="your-aws-key"
-# export AWS_SECRET_ACCESS_KEY="your-aws-secret"
+#
 EOF
         chmod 600 "$HOME/.bashrc.env"  # Restrict permissions to owner only
         log_info "Created ~/.bashrc.env (use this for API keys and secrets)"
