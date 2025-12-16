@@ -114,13 +114,7 @@ check_and_upgrade_neovim() {
     # Check if version is below 0.10
     if [ "$major" -eq 0 ] && [ "$minor" -lt 10 ]; then
         log_warn "Neovim version $nvim_version is below 0.10"
-
-        read -p "Install newer neovim (v0.11.5) to \$HOME/bin? (y/n) " -n 1 -r
-        echo
-        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-            log_warn "Skipping neovim upgrade. Some features may not work."
-            return 0
-        fi
+        log_info "Automatically installing neovim v0.11.5 to \$HOME/bin..."
 
         install_neovim_from_release
     else
@@ -342,13 +336,8 @@ main() {
     echo ""
 
     if ! check_dependencies; then
-        read -p "Install missing dependencies? (y/n) " -n 1 -r
-        echo
-        if [[ $REPLY =~ ^[Yy]$ ]]; then
-            install_packages
-        else
-            log_warn "Skipping package installation. Some features may not work."
-        fi
+        log_info "Installing missing dependencies automatically..."
+        install_packages
         echo ""
     fi
 
