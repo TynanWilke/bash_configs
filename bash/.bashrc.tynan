@@ -11,7 +11,54 @@ export HISTTIMEFORMAT="%F %T "
 parse_git_branch() {
   git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/ (\1)/'
 }
-PS1='\e[?2004l[\[\033[35m\]\t\[\033[m\]-\[\033[36m\]\u\[\033[m\]@\[\033[32m\]\h:\[\033[33;1m\]\w\[\033[m\]]$(parse_git_branch)\n$ '
+
+# Generate a consistent emoji for this hostname
+get_hostname_emoji() {
+  # Array of emoji symbols (Unicode characters that work in most terminals)
+  # 150+ emojis for better distinction across many servers
+  local emojis=(
+    # Stars & Space
+    "🌟" "⭐" "✨" "💫" "⚡" "☄️" "🌠" "🪐" "🌌" "🌙" "🌛" "🌜" "☀️" "🌤️" "⛅" "🌥️" "⛈️" "🌦️" "🌧️" "⚡"
+    # Nature & Weather
+    "🌈" "🌊" "💧" "💦" "🌫️" "🌪️" "🌬️" "❄️" "☃️" "⛄" "🔥" "💥" "🌋" "🏔️" "⛰️" "🗻" "🏕️" "🏖️" "🏝️" "🏜️"
+    # Plants & Flowers
+    "🌸" "🌺" "🌻" "🌷" "🌹" "🥀" "🌼" "🌾" "🌿" "☘️" "🍀" "🍁" "🍂" "🍃" "🌳" "🌲" "🌴" "🌵" "🌱" "🪴"
+    # Animals & Creatures
+    "🦋" "🐛" "🐝" "🪲" "🐞" "🦗" "🕷️" "🦂" "🐢" "🐍" "🦎" "🐊" "🦕" "🦖" "🦈" "🐙" "🦑" "🦀" "🦞" "🐡"
+    "🐠" "🐟" "🐬" "🐳" "🐋" "🦭" "🦦" "🦥" "🦘" "🦌" "🦒" "🦏" "🦛" "🐘" "🦣" "🐪" "🐫" "🦙" "🦧" "🦍"
+    "🐒" "🦊" "🐺" "🦝" "🐻" "🐼" "🐨" "🐯" "🦁" "🐮" "🐷" "🐗" "🐴" "🦄" "🦓" "🐉" "🐲" "🦅" "🦆" "🦉"
+    # Objects & Symbols
+    "💎" "💍" "🔮" "🎯" "🎨" "🎭" "🎪" "🎬" "🎮" "🎲" "🎰" "🎸" "🎺" "🎻" "🥁" "🎹" "🎼" "🎧" "🎤" "🎬"
+    "🏆" "🥇" "🥈" "🥉" "🏅" "🎖️" "🏵️" "🎗️" "🎫" "🎟️" "🎓" "🧭" "🗝️" "🔑" "🔐" "🔒" "🔓" "🔧" "🔨" "⚙️"
+    "🛠️" "⚔️" "🗡️" "🛡️" "🪓" "⚒️" "🪚" "🔩" "⚡" "💡" "🔦" "🕯️" "🪔" "🔥" "🧨" "💣" "📡" "📱" "💻" "⌨️"
+    "🖥️" "🖨️" "⏰" "⏱️" "⏲️" "🧲" "🔭" "🔬" "🩺" "💉" "💊" "🧬" "🦠" "🧪" "🌡️" "🧯" "🪣" "🧲" "🧿" "🪬"
+  )
+
+  # Get hostname
+  local hostname=$(hostname)
+
+  # Hash the hostname using md5sum or md5 (cross-platform)
+  local hash
+  if command -v md5sum &> /dev/null; then
+    hash=$(echo -n "$hostname" | md5sum | cut -d' ' -f1)
+  elif command -v md5 &> /dev/null; then
+    hash=$(echo -n "$hostname" | md5)
+  else
+    # Fallback: use simple sum of character values
+    hash=$(echo -n "$hostname" | cksum | cut -d' ' -f1)
+  fi
+
+  # Convert first 8 hex characters to decimal
+  local hash_num=$((16#${hash:0:8}))
+
+  # Select emoji based on hash modulo array length
+  local emoji_count=${#emojis[@]}
+  local index=$((hash_num % emoji_count))
+
+  echo " ${emojis[$index]}"
+}
+
+PS1='\e[?2004l[\[\033[35m\]\t\[\033[m\]-\[\033[36m\]\u\[\033[m\]@\[\033[32m\]\h:\[\033[33;1m\]\w\[\033[m\]]$(parse_git_branch)$(get_hostname_emoji)\n$ '
 unset color_prompt force_color_prompt
 
 # Dont shutdown terminal on ctrl-d
